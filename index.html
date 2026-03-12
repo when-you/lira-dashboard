@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lira Interview Prep Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e0e0e0; }
+
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 24px 32px; border-bottom: 1px solid #2a2a4a; }
+    .header h1 { font-size: 24px; color: #fff; margin-bottom: 4px; }
+    .header p { font-size: 14px; color: #888; }
+
+    .controls { display: flex; gap: 16px; padding: 20px 32px; background: #13141b; border-bottom: 1px solid #2a2a4a; flex-wrap: wrap; align-items: center; }
+    .control-group { display: flex; flex-direction: column; gap: 4px; }
+    .control-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+    .control-group select { background: #1e1f2e; border: 1px solid #3a3a5a; color: #e0e0e0; padding: 8px 12px; border-radius: 6px; font-size: 14px; min-width: 200px; cursor: pointer; }
+    .control-group select:focus { outline: none; border-color: #6c5ce7; }
+
+    .segment-count { background: #1e1f2e; border: 1px solid #3a3a5a; border-radius: 6px; padding: 8px 16px; font-size: 13px; color: #aaa; align-self: flex-end; }
+    .segment-count strong { color: #6c5ce7; font-size: 18px; }
+
+    .dashboard { padding: 24px 32px; display: grid; gap: 24px; }
+
+    .row { display: grid; gap: 24px; }
+    .row-2 { grid-template-columns: 1fr 1fr; }
+    .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .row-1 { grid-template-columns: 1fr; }
+
+    .card { background: #1a1b26; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; }
+    .card h3 { font-size: 14px; color: #aaa; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card canvas { width: 100% !important; }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 12px; background: #13141b; color: #888; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; position: sticky; top: 0; }
+    td { padding: 10px 12px; border-top: 1px solid #2a2a4a; }
+    tr:hover td { background: #1e1f2e; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-red { background: #e74c3c22; color: #e74c3c; }
+    .badge-yellow { background: #f39c1222; color: #f39c12; }
+    .badge-green { background: #27ae6022; color: #27ae60; }
+    .badge-purple { background: #6c5ce722; color: #6c5ce7; }
+
+    .table-controls { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .table-controls input { background: #1e1f2e; border: 1px solid #3a3a5a; color: #e0e0e0; padding: 8px 12px; border-radius: 6px; font-size: 13px; min-width: 240px; }
+    .table-controls input:focus { outline: none; border-color: #6c5ce7; }
+    th { cursor: pointer; user-select: none; }
+    th:hover { color: #ccc; }
+    th .sort-arrow { font-size: 10px; margin-left: 4px; color: #6c5ce7; }
+
+    .col-filter-row td { padding: 4px 6px; background: #13141b; border-top: none; }
+    .col-filter-btn { background: #1e1f2e; border: 1px solid #3a3a5a; color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .col-filter-btn:hover { border-color: #6c5ce7; color: #ccc; }
+    .col-filter-btn.active { border-color: #6c5ce7; color: #6c5ce7; }
+    .col-filter-dropdown { position: absolute; z-index: 100; background: #1a1b26; border: 1px solid #3a3a5a; border-radius: 8px; padding: 8px; min-width: 180px; max-height: 280px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .col-filter-dropdown label { display: flex; align-items: center; gap: 6px; padding: 4px 6px; font-size: 12px; color: #ccc; cursor: pointer; border-radius: 4px; }
+    .col-filter-dropdown label:hover { background: #2a2a4a; }
+    .col-filter-dropdown input[type="checkbox"] { accent-color: #6c5ce7; }
+    .col-filter-actions { display: flex; gap: 8px; padding: 6px 6px 4px; border-bottom: 1px solid #2a2a4a; margin-bottom: 4px; }
+    .col-filter-actions button { background: none; border: none; color: #6c5ce7; font-size: 11px; cursor: pointer; padding: 2px 4px; }
+    .col-filter-actions button:hover { text-decoration: underline; }
+    .col-filter-apply { display: flex; justify-content: flex-end; padding: 6px 6px 2px; border-top: 1px solid #2a2a4a; margin-top: 4px; }
+    .col-filter-apply button { background: #6c5ce7; border: none; color: #fff; font-size: 11px; cursor: pointer; padding: 4px 12px; border-radius: 4px; }
+    .col-filter-apply button:hover { background: #5a4bd1; }
+
+    .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 32px 0; }
+    .chip { background: #6c5ce722; color: #6c5ce7; border: 1px solid #6c5ce744; padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+    .chip:hover { background: #6c5ce744; }
+    .chip.active { background: #6c5ce7; color: #fff; }
+
+    @media (max-width: 900px) {
+      .row-2, .row-3 { grid-template-columns: 1fr; }
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Lira Interview Prep Research Dashboard</h1>
+    <p>26 participants — March 11, 2026 cohort — Interactive segmentation explorer</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Segment By</label>
+      <select id="segmentBy" onchange="render()">
+        <option value="">All Participants</option>
+        <option value="ageGroup">Age Group</option>
+        <option value="gender">Gender</option>
+        <option value="inferredSeniority">Seniority (Inferred)</option>
+        <option value="inferredRole">Role Type (Inferred)</option>
+        <option value="inferredIndustry">Industry (Inferred)</option>
+        <option value="inferredSalary">Salary Band (Inferred)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Filter Segment</label>
+      <select id="filterSegment" onchange="render()">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Compare With</label>
+      <select id="compareSegment" onchange="render()">
+        <option value="">None</option>
+      </select>
+    </div>
+    <div class="segment-count">
+      <strong id="countDisplay">26</strong> participants selected
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <!-- Row 1: Interview activity (stacked bars) -->
+    <div class="row row-3">
+      <div class="card">
+        <h3>Number of Interviews (Last 3 Months)</h3>
+        <canvas id="chartInterviews"></canvas>
+      </div>
+      <div class="card">
+        <h3>Prep Time Per Round</h3>
+        <canvas id="chartPrepTime"></canvas>
+      </div>
+      <div class="card">
+        <h3>How Far in Interview Process</h3>
+        <canvas id="chartProgress"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 2: Self-assessment & pain points -->
+    <div class="row row-1">
+      <div class="card">
+        <h3>Self-Assessment: Where They Struggle</h3>
+        <canvas id="chartSelfAssessment"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 3: Effort & WTP -->
+    <div class="row row-2">
+      <div class="card">
+        <h3>Effort Spent on Each Dimension</h3>
+        <canvas id="chartEffort"></canvas>
+      </div>
+      <div class="card">
+        <h3>Willingness to Pay: Response Distribution</h3>
+        <canvas id="chartWTP"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 4: WTP Average comparison -->
+    <div class="row row-1">
+      <div class="card">
+        <h3>Average Willingness to Pay by Dimension</h3>
+        <canvas id="chartWTPAvg"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 5: Segment comparison (only shown when segmenting) -->
+    <div class="row row-2" id="segmentComparisonRow" style="display:none;">
+      <div class="card">
+        <h3>% Saying "Priority" by Segment</h3>
+        <canvas id="chartSegmentPriority"></canvas>
+      </div>
+      <div class="card">
+        <h3>Avg WTP ($) by Segment</h3>
+        <canvas id="chartSegmentWTP"></canvas>
+      </div>
+    </div>
+
+    <!-- Participant table -->
+    <div class="card">
+      <h3>Participant Details</h3>
+      <div class="table-container" id="tableContainer"></div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    // Chart instances
+    let charts = {};
+    const dimLabelsShort = ["Questions\n& format", "Good\nanswers", "Concrete\nanswers", "Strategic\nposition", "Remember\nwhat to say", "Delivery\n& tone", "Practice\nlive", "Feedback &\nblindspots"];
+
+    const COLORS = {
+      purple: '#6c5ce7',
+      blue: '#0984e3',
+      green: '#00b894',
+      orange: '#e17055',
+      red: '#d63031',
+      yellow: '#fdcb6e',
+      pink: '#e84393',
+      teal: '#00cec9',
+      grey: '#636e72'
+    };
+    const PALETTE = [COLORS.purple, COLORS.blue, COLORS.green, COLORS.orange, COLORS.red, COLORS.yellow, COLORS.pink, COLORS.teal, COLORS.grey];
+
+    // Salary band sort order
+    const salaryOrder = ["$40k-$60k", "$50k-$70k", "$60k-$80k", "$80k-$100k", "$100k+"];
+
+    function sortSegments(segBy, vals) {
+      if (segBy === 'inferredSalary') {
+        return vals.sort((a, b) => salaryOrder.indexOf(a) - salaryOrder.indexOf(b));
+      }
+      return vals.sort();
+    }
+
+    function getFiltered() {
+      const segBy = document.getElementById('segmentBy').value;
+      const filterVal = document.getElementById('filterSegment').value;
+      let data = participants;
+      if (segBy && filterVal) {
+        data = data.filter(p => p[segBy] === filterVal);
+      }
+      return data;
+    }
+
+    function getCompare() {
+      const segBy = document.getElementById('segmentBy').value;
+      const compareVal = document.getElementById('compareSegment').value;
+      if (!segBy || !compareVal) return null;
+      return participants.filter(p => p[segBy] === compareVal);
+    }
+
+    function destroyChart(id) {
+      if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    }
+
+    function makeChart(id, config) {
+      destroyChart(id);
+      const ctx = document.getElementById(id).getContext('2d');
+      charts[id] = new Chart(ctx, config);
+    }
+
+    // Update filter dropdowns with proper salary sort
+    document.getElementById('segmentBy').addEventListener('change', function() {
+      const segBy = this.value;
+      const filterSelect = document.getElementById('filterSegment');
+      const compareSelect = document.getElementById('compareSegment');
+      filterSelect.innerHTML = '<option value="">All</option>';
+      compareSelect.innerHTML = '<option value="">None</option>';
+      if (segBy) {
+        const vals = sortSegments(segBy, [...new Set(participants.map(p => p[segBy]))]);
+        vals.forEach(v => {
+          const count = participants.filter(p => p[segBy] === v).length;
+          filterSelect.innerHTML += `<option value="${v}">${v} (${count})</option>`;
+          compareSelect.innerHTML += `<option value="${v}">${v} (${count})</option>`;
+        });
+      }
+    });
+
+    function render() {
+      const data = getFiltered();
+      const compare = getCompare();
+      const segBy = document.getElementById('segmentBy').value;
+
+      document.getElementById('countDisplay').textContent = data.length;
+
+      // Chart: Interviews — stacked bar by category
+      const intCategories = ["0 roles", "1-2 roles", "3-5 roles", "6-10 roles"];
+      const intColors = [COLORS.grey + 'cc', COLORS.teal + 'cc', COLORS.blue + 'cc', COLORS.purple + 'cc'];
+      const intDatasets = intCategories.map((cat, ci) => ({
+        label: cat,
+        data: [data.filter(p => p.interviews === cat).length],
+        backgroundColor: intColors[ci]
+      }));
+      makeChart('chartInterviews', {
+        type: 'bar',
+        data: { labels: ['Participants'], datasets: intDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: Prep Time — stacked bar
+      const prepCategories = ["0-15 min", "30 min", "1-2 hours", "3-4 hours", "5+ hours"];
+      const prepColors = [COLORS.grey + 'cc', COLORS.teal + 'cc', COLORS.blue + 'cc', COLORS.purple + 'cc', COLORS.red + 'cc'];
+      const prepDatasets = prepCategories.map((cat, ci) => ({
+        label: cat,
+        data: [data.filter(p => p.prepTime === cat).length],
+        backgroundColor: prepColors[ci]
+      }));
+      makeChart('chartPrepTime', {
+        type: 'bar',
+        data: { labels: ['Participants'], datasets: prepDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: Progress — stacked bar
+      const progCategories = ["Barely getting callbacks", "Too hard to pass the first call", "Struggling in the middle of process", "Making it to final round, but no offer", "Getting offers, but don't like them"];
+      const progLabelsShort = ["Barely getting callbacks", "Can't pass first call", "Struggling mid-process", "Final round, no offer", "Getting offers"];
+      const progColors = [COLORS.grey + 'cc', COLORS.red + 'cc', COLORS.orange + 'cc', COLORS.yellow + 'cc', COLORS.green + 'cc'];
+      const progDatasets = progCategories.map((cat, ci) => ({
+        label: progLabelsShort[ci],
+        data: [data.filter(p => p.interviewProgress === cat).length],
+        backgroundColor: progColors[ci]
+      }));
+      makeChart('chartProgress', {
+        type: 'bar',
+        data: { labels: ['Participants'], datasets: progDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: Self-Assessment (stacked)
+      const saLevels = ["It's a priority that I need to solve", "Could improve, but I have the basics", "Not an issue for me"];
+      const saColors = [COLORS.red + 'cc', COLORS.yellow + 'cc', COLORS.green + 'cc'];
+      const saLabels = ["Priority to solve", "Could improve", "Not an issue"];
+      const saDatasets = saLevels.map((level, li) => ({
+        label: saLabels[li],
+        data: dimensions.map((_, di) => data.filter(p => p.selfAssessment[di] === level).length),
+        backgroundColor: saColors[li]
+      }));
+      makeChart('chartSelfAssessment', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: saDatasets },
+        options: { responsive: true, aspectRatio: 3, plugins: { legend: { position: 'top', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: Effort
+      const effortLabels = ["Minimal", "5+ hrs FREE", "10+ hrs FREE", "3+ hrs PAID", "$50+ spent"];
+      const effortColors = ['#636e72cc', COLORS.blue + 'cc', COLORS.teal + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
+      const effortDatasets = [1,2,3,4,5].map((lvl, li) => ({
+        label: effortLabels[li],
+        data: dimensions.map((_, di) => data.filter(p => p.effortSpent[di] === lvl).length),
+        backgroundColor: effortColors[li]
+      }));
+      makeChart('chartEffort', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: effortDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: WTP Distribution
+      const wtpPoints = [0, 10, 25, 50, 100];
+      const wtpLabelsArr = ["$0", "$10", "$25", "$50", "$100+"];
+      const wtpColors = ['#636e72cc', COLORS.blue + 'cc', COLORS.green + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
+      const wtpDatasets = wtpPoints.map((price, pi) => ({
+        label: wtpLabelsArr[pi],
+        data: dimensions.map((_, di) => data.filter(p => p.wtp[di] === price).length),
+        backgroundColor: wtpColors[pi]
+      }));
+      makeChart('chartWTP', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: wtpDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+      });
+
+      // Chart: WTP Average
+      const avgWTPs = dimensions.map((_, i) => data.reduce((s, p) => s + p.wtp[i], 0) / data.length);
+      const wtpAvgConfig = {
+        type: 'bar',
+        data: {
+          labels: dimLabelsShort,
+          datasets: [{
+            label: document.getElementById('filterSegment').value || 'Selected',
+            data: avgWTPs,
+            backgroundColor: COLORS.purple + '99',
+            borderColor: COLORS.purple,
+            borderWidth: 1
+          }]
+        },
+        options: { responsive: true, aspectRatio: 3, plugins: { legend: { display: !!compare, labels: { color: '#ccc' } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
+      };
+      if (compare) {
+        const compAvgWTPs = dimensions.map((_, i) => compare.reduce((s, p) => s + p.wtp[i], 0) / compare.length);
+        wtpAvgConfig.data.datasets.push({
+          label: document.getElementById('compareSegment').value,
+          data: compAvgWTPs,
+          backgroundColor: COLORS.orange + '99',
+          borderColor: COLORS.orange,
+          borderWidth: 1
+        });
+      }
+      makeChart('chartWTPAvg', wtpAvgConfig);
+
+      // Segment comparison charts
+      const segRow = document.getElementById('segmentComparisonRow');
+      if (segBy && !document.getElementById('filterSegment').value) {
+        segRow.style.display = 'grid';
+        const segments = sortSegments(segBy, [...new Set(participants.map(p => p[segBy]))]);
+
+        const prioDatasets = segments.map((seg, si) => {
+          const segData = participants.filter(p => p[segBy] === seg);
+          return {
+            label: seg,
+            data: dimensions.map((_, di) => {
+              const count = segData.filter(p => p.selfAssessment[di] === "It's a priority that I need to solve").length;
+              return Math.round(count / segData.length * 100);
+            }),
+            backgroundColor: PALETTE[si % PALETTE.length] + '99',
+            borderColor: PALETTE[si % PALETTE.length],
+            borderWidth: 1
+          };
+        });
+        makeChart('chartSegmentPriority', {
+          type: 'bar',
+          data: { labels: dimLabelsShort, datasets: prioDatasets },
+          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#2a2a4a' } } } }
+        });
+
+        const wtpSegDatasets = segments.map((seg, si) => {
+          const segData = participants.filter(p => p[segBy] === seg);
+          return {
+            label: seg,
+            data: dimensions.map((_, di) => segData.reduce((s, p) => s + p.wtp[di], 0) / segData.length),
+            backgroundColor: PALETTE[si % PALETTE.length] + '99',
+            borderColor: PALETTE[si % PALETTE.length],
+            borderWidth: 1
+          };
+        });
+        makeChart('chartSegmentWTP', {
+          type: 'bar',
+          data: { labels: dimLabelsShort, datasets: wtpSegDatasets },
+          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } } } }
+        });
+      } else {
+        segRow.style.display = 'none';
+      }
+
+      // Table
+      renderTable(data);
+    }
+
+    // Table state
+    let tableSort = { col: null, asc: true };
+    let tableFilter = '';
+    let columnFilters = {}; // { colIdx: Set of selected values }
+    let openDropdown = null; // currently open column filter dropdown
+    let pendingSelections = null; // temp selections before applying
+
+    const colKeys = ['name','age','gender','inferredSeniority','inferredRole','inferredIndustry','inferredSalary','interviews','prepTime','interviewProgress','topPain','topWTP'];
+    const headers = ['Name','Age','Gender','Seniority','Role Type','Industry','Salary','Interviews','Prep Time','Progress','Top Pain','Top WTP'];
+
+    function getColValue(p, colKey) {
+      if (colKey === 'name') return p.name;
+      if (colKey === 'age') return String(p.age);
+      if (colKey === 'topPain') return getTopPainLabel(p);
+      if (colKey === 'topWTP') return getTopWTPLabel(p);
+      return p[colKey] || '';
+    }
+
+    function getTopPainLabel(p) {
+      const scores = p.selfAssessment.map((v, i) => ({
+        score: v === "It's a priority that I need to solve" ? 3 : v === "Could improve, but I have the basics" ? 2 : 1,
+        level: v, idx: i
+      }));
+      const maxScore = Math.max(...scores.map(s => s.score));
+      const tops = scores.filter(s => s.score === maxScore);
+      if (maxScore === 3) return tops.map(t => dimShort(t.idx)).join(', ');
+      return dimShort(tops[0].idx);
+    }
+
+    function getTopWTPLabel(p) {
+      const maxWTP = Math.max(...p.wtp);
+      const tops = p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP);
+      if (maxWTP >= 50) return tops.map(t => dimShort(t.idx)).join(', ');
+      return dimShort(tops[0].idx);
+    }
+
+    function getTopPains(p) {
+      const scores = p.selfAssessment.map((v, i) => ({
+        score: v === "It's a priority that I need to solve" ? 3 : v === "Could improve, but I have the basics" ? 2 : 1,
+        level: v, idx: i
+      }));
+      const maxScore = Math.max(...scores.map(s => s.score));
+      // Only show multiple if top level is "priority"
+      if (maxScore === 3) return scores.filter(s => s.score === maxScore);
+      return [scores.filter(s => s.score === maxScore)[0]];
+    }
+
+    function getTopWTPs(p) {
+      const maxWTP = Math.max(...p.wtp);
+      const tops = p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP);
+      // Only show multiple for $50 and $100+
+      if (maxWTP >= 50) return tops;
+      return [tops[0]];
+    }
+
+    function dimShort(idx) {
+      return dimensions[idx].split(' ').slice(0, 3).join(' ');
+    }
+
+    function getUniqueColValues(data, colIdx) {
+      const colKey = colKeys[colIdx];
+      const vals = new Set();
+      data.forEach(p => vals.add(getColValue(p, colKey)));
+      return [...vals].sort();
+    }
+
+    function closeDropdown() {
+      if (openDropdown !== null) {
+        const el = document.getElementById('colFilterDropdown');
+        if (el) el.remove();
+        openDropdown = null;
+        pendingSelections = null;
+      }
+    }
+
+    function toggleColumnFilter(colIdx, event) {
+      event.stopPropagation();
+      if (openDropdown === colIdx) { closeDropdown(); return; }
+      closeDropdown();
+      openDropdown = colIdx;
+
+      const data = getFiltered();
+      const allVals = getUniqueColValues(data, colIdx);
+      const current = columnFilters[colIdx] || new Set(allVals);
+      pendingSelections = new Set(current);
+
+      const btn = event.target.closest('.col-filter-btn');
+      const rect = btn.getBoundingClientRect();
+
+      const dropdown = document.createElement('div');
+      dropdown.id = 'colFilterDropdown';
+      dropdown.className = 'col-filter-dropdown';
+      dropdown.style.position = 'fixed';
+      dropdown.style.top = (rect.bottom + 4) + 'px';
+      dropdown.style.left = rect.left + 'px';
+
+      let html = `<div class="col-filter-actions">
+        <button onclick="colFilterSelectAll(event)">Select All</button>
+        <button onclick="colFilterUnselectAll(event)">Unselect All</button>
+      </div>`;
+      allVals.forEach(v => {
+        const checked = pendingSelections.has(v) ? 'checked' : '';
+        const escaped = v.replace(/"/g, '&quot;');
+        html += `<label><input type="checkbox" ${checked} onchange="colFilterToggle(this, '${escaped}')">${v}</label>`;
+      });
+      html += `<div class="col-filter-apply"><button onclick="applyColumnFilter(${colIdx})">Apply</button></div>`;
+      dropdown.innerHTML = html;
+      dropdown.addEventListener('click', e => e.stopPropagation());
+      document.body.appendChild(dropdown);
+
+      // Ensure dropdown doesn't overflow viewport
+      const ddRect = dropdown.getBoundingClientRect();
+      if (ddRect.right > window.innerWidth) {
+        dropdown.style.left = (window.innerWidth - ddRect.width - 8) + 'px';
+      }
+      if (ddRect.bottom > window.innerHeight) {
+        dropdown.style.top = (rect.top - ddRect.height - 4) + 'px';
+      }
+    }
+
+    function colFilterToggle(checkbox, val) {
+      if (checkbox.checked) pendingSelections.add(val);
+      else pendingSelections.delete(val);
+    }
+
+    function colFilterSelectAll(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById('colFilterDropdown');
+      dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = true;
+        const val = cb.parentElement.textContent;
+        pendingSelections.add(val);
+      });
+    }
+
+    function colFilterUnselectAll(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById('colFilterDropdown');
+      dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+      pendingSelections.clear();
+    }
+
+    function applyColumnFilter(colIdx) {
+      const data = getFiltered();
+      const allVals = getUniqueColValues(data, colIdx);
+      // If all selected, remove filter entirely
+      if (pendingSelections.size === allVals.length) {
+        delete columnFilters[colIdx];
+      } else {
+        columnFilters[colIdx] = new Set(pendingSelections);
+      }
+      closeDropdown();
+      renderTable(getFiltered());
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', () => closeDropdown());
+
+    function renderTable(data) {
+      const assessBadge = (val) => {
+        if (val === "It's a priority that I need to solve") return '<span class="badge badge-red">Priority</span>';
+        if (val === "Could improve, but I have the basics") return '<span class="badge badge-yellow">Could improve</span>';
+        return '<span class="badge badge-green">Not an issue</span>';
+      };
+
+      // Apply text filter
+      let filtered = data;
+      if (tableFilter) {
+        const q = tableFilter.toLowerCase();
+        filtered = data.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.targetRole.toLowerCase().includes(q) ||
+          p.gender.toLowerCase().includes(q) ||
+          p.inferredSeniority.toLowerCase().includes(q) ||
+          p.inferredRole.toLowerCase().includes(q) ||
+          p.inferredIndustry.toLowerCase().includes(q) ||
+          p.inferredSalary.toLowerCase().includes(q) ||
+          p.interviews.toLowerCase().includes(q) ||
+          p.prepTime.toLowerCase().includes(q) ||
+          p.interviewProgress.toLowerCase().includes(q)
+        );
+      }
+
+      // Apply column filters
+      Object.entries(columnFilters).forEach(([ci, allowed]) => {
+        const colKey = colKeys[ci];
+        filtered = filtered.filter(p => allowed.has(getColValue(p, colKey)));
+      });
+
+      // Apply sort
+      if (tableSort.col !== null) {
+        const colKey = colKeys[tableSort.col];
+        filtered = [...filtered].sort((a, b) => {
+          let va, vb;
+          if (colKey === 'topPain') {
+            va = getTopPains(a)[0].score;
+            vb = getTopPains(b)[0].score;
+          } else if (colKey === 'topWTP') {
+            va = Math.max(...a.wtp);
+            vb = Math.max(...b.wtp);
+          } else if (colKey === 'age') {
+            va = a.age; vb = b.age;
+          } else if (colKey === 'inferredSalary') {
+            va = salaryOrder.indexOf(a.inferredSalary);
+            vb = salaryOrder.indexOf(b.inferredSalary);
+          } else {
+            va = (a[colKey] || '').toLowerCase();
+            vb = (b[colKey] || '').toLowerCase();
+          }
+          if (va < vb) return tableSort.asc ? -1 : 1;
+          if (va > vb) return tableSort.asc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      const arrow = (ci) => tableSort.col === ci ? `<span class="sort-arrow">${tableSort.asc ? '\u25B2' : '\u25BC'}</span>` : '';
+
+      let html = `<div class="table-controls">
+        <input type="text" id="tableFilterInput" placeholder="Search participants..." value="${tableFilter}" oninput="tableFilter=this.value;renderTable(getFiltered())">
+      </div>`;
+      html += `<table><thead><tr>`;
+      headers.forEach((h, i) => {
+        html += `<th onclick="sortTable(${i})">${h}${arrow(i)}</th>`;
+      });
+      html += `</tr>`;
+
+      // Column filter row
+      html += `<tr class="col-filter-row">`;
+      headers.forEach((h, i) => {
+        const isActive = columnFilters[i] ? 'active' : '';
+        const filterLabel = columnFilters[i] ? `${columnFilters[i].size} selected` : 'All';
+        html += `<td><button class="col-filter-btn ${isActive}" onclick="toggleColumnFilter(${i}, event)">${filterLabel}</button></td>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      filtered.forEach(p => {
+        const pains = getTopPains(p);
+        const painHtml = pains.map(pain => `${assessBadge(pain.level)} ${dimShort(pain.idx)}`).join('<br>');
+
+        const wtps = getTopWTPs(p);
+        const wtpHtml = wtps.map(w => `<strong>$${w.val}</strong> ${dimShort(w.idx)}`).join('<br>');
+
+        html += `<tr>
+          <td><strong>${p.name}</strong><br><span style="color:#888;font-size:11px">${p.targetRole}</span></td>
+          <td>${p.age}</td>
+          <td>${p.gender}</td>
+          <td>${p.inferredSeniority}</td>
+          <td>${p.inferredRole}</td>
+          <td>${p.inferredIndustry}</td>
+          <td><span class="badge badge-purple">${p.inferredSalary}</span></td>
+          <td>${p.interviews}</td>
+          <td>${p.prepTime}</td>
+          <td>${p.interviewProgress.split(',')[0]}</td>
+          <td>${painHtml}</td>
+          <td>${wtpHtml}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    function sortTable(colIdx) {
+      if (tableSort.col === colIdx) {
+        tableSort.asc = !tableSort.asc;
+      } else {
+        tableSort.col = colIdx;
+        tableSort.asc = true;
+      }
+      renderTable(getFiltered());
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
