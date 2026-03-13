@@ -163,12 +163,12 @@
         <h3>Average Willingness to Pay by Dimension</h3>
         <canvas id="chartWTPAvg"></canvas>
       </div>
-      <div class="card" id="segmentSACard" style="display:none;">
+      <div class="card">
         <h3>Self-Assessment by Segment (Avg Score)</h3>
         <canvas id="chartSegmentSelfAssessment"></canvas>
       </div>
     </div>
-    <div class="row row-2" id="segmentComparisonRow" style="display:none;">
+    <div class="row row-2">
       <div class="card">
         <h3>% Saying "Priority" by Segment</h3>
         <canvas id="chartSegmentPriority"></canvas>
@@ -415,69 +415,67 @@
         makeChart('chartWTPAvg', wtpAvgConfig);
       }
 
-      // Segment comparison charts
-      const segRow = document.getElementById('segmentComparisonRow');
-      if (showSegmented) {
-        segRow.style.display = 'grid';
+      // Segment comparison charts (always shown — use segments if available, otherwise all participants as one group)
+      const saScoreMap = {"It's a priority that I need to solve": 3, "Could improve, but I have the basics": 2, "Not an issue for me": 1};
+      const chartGroups = showSegmented ? segments : ['All Participants'];
+      const getGroupData = (grp) => showSegmented ? participants.filter(p => p[segBy] === grp) : data;
 
-        // Self-Assessment by Segment (avg score: Priority=3, Could improve=2, Not an issue=1)
-        const saScoreMap = {"It's a priority that I need to solve": 3, "Could improve, but I have the basics": 2, "Not an issue for me": 1};
-        const saSegDatasets = segments.map((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
-          return {
-            label: seg,
-            data: dimensions.map((_, di) => {
-              const avg = segData.reduce((s, p) => s + (saScoreMap[p.selfAssessment[di]] || 1), 0) / segData.length;
-              return Math.round(avg * 100) / 100;
-            }),
-            backgroundColor: PALETTE[si % PALETTE.length] + '99',
-            borderColor: PALETTE[si % PALETTE.length],
-            borderWidth: 1
-          };
-        });
-        makeChart('chartSegmentSelfAssessment', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: saSegDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 3, ticks: { color: '#888', stepSize: 1, callback: v => v === 1 ? 'Not an issue' : v === 2 ? 'Could improve' : v === 3 ? 'Priority' : '' }, grid: { color: '#2a2a4a' } } } }
-        });
+      // Self-Assessment by Segment (avg score)
+      const saSegDatasets = chartGroups.map((grp, si) => {
+        const grpData = getGroupData(grp);
+        return {
+          label: grp,
+          data: dimensions.map((_, di) => {
+            const avg = grpData.reduce((s, p) => s + (saScoreMap[p.selfAssessment[di]] || 1), 0) / grpData.length;
+            return Math.round(avg * 100) / 100;
+          }),
+          backgroundColor: PALETTE[si % PALETTE.length] + '99',
+          borderColor: PALETTE[si % PALETTE.length],
+          borderWidth: 1
+        };
+      });
+      makeChart('chartSegmentSelfAssessment', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: saSegDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 3, ticks: { color: '#888', stepSize: 1, callback: v => v === 1 ? 'Not an issue' : v === 2 ? 'Could improve' : v === 3 ? 'Priority' : '' }, grid: { color: '#2a2a4a' } } } }
+      });
 
-        const prioDatasets = segments.map((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
-          return {
-            label: seg,
-            data: dimensions.map((_, di) => {
-              const count = segData.filter(p => p.selfAssessment[di] === "It's a priority that I need to solve").length;
-              return Math.round(count / segData.length * 100);
-            }),
-            backgroundColor: PALETTE[si % PALETTE.length] + '99',
-            borderColor: PALETTE[si % PALETTE.length],
-            borderWidth: 1
-          };
-        });
-        makeChart('chartSegmentPriority', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: prioDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#2a2a4a' } } } }
-        });
+      // % Saying "Priority" by Segment
+      const prioDatasets = chartGroups.map((grp, si) => {
+        const grpData = getGroupData(grp);
+        return {
+          label: grp,
+          data: dimensions.map((_, di) => {
+            const count = grpData.filter(p => p.selfAssessment[di] === "It's a priority that I need to solve").length;
+            return Math.round(count / grpData.length * 100);
+          }),
+          backgroundColor: PALETTE[si % PALETTE.length] + '99',
+          borderColor: PALETTE[si % PALETTE.length],
+          borderWidth: 1
+        };
+      });
+      makeChart('chartSegmentPriority', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: prioDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#2a2a4a' } } } }
+      });
 
-        const wtpSegDatasets = segments.map((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
-          return {
-            label: seg,
-            data: dimensions.map((_, di) => segData.reduce((s, p) => s + p.wtp[di], 0) / segData.length),
-            backgroundColor: PALETTE[si % PALETTE.length] + '99',
-            borderColor: PALETTE[si % PALETTE.length],
-            borderWidth: 1
-          };
-        });
-        makeChart('chartSegmentWTP', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: wtpSegDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } } } }
-        });
-      } else {
-        segRow.style.display = 'none';
-      }
+      // Avg WTP ($) by Segment
+      const wtpSegDatasets = chartGroups.map((grp, si) => {
+        const grpData = getGroupData(grp);
+        return {
+          label: grp,
+          data: dimensions.map((_, di) => grpData.reduce((s, p) => s + p.wtp[di], 0) / grpData.length),
+          backgroundColor: PALETTE[si % PALETTE.length] + '99',
+          borderColor: PALETTE[si % PALETTE.length],
+          borderWidth: 1
+        };
+      });
+      makeChart('chartSegmentWTP', {
+        type: 'bar',
+        data: { labels: dimLabelsShort, datasets: wtpSegDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } } } }
+      });
 
       // Table
       renderTable(data);
