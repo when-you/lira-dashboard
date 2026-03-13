@@ -149,8 +149,8 @@
     </div>
     <div class="row row-2">
       <div class="card">
-        <h3>% Saying "Priority" by Segment</h3>
-        <canvas id="chartSegmentPriority"></canvas>
+        <h3>Avg Effort Spent by Dimension</h3>
+        <canvas id="chartSegmentEffort"></canvas>
       </div>
       <div class="card">
         <h3>Avg WTP ($) by Segment</h3>
@@ -373,24 +373,25 @@
         options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 3, ticks: { color: '#888', stepSize: 1, callback: v => v === 1 ? 'Not an issue' : v === 2 ? 'Could improve' : v === 3 ? 'Priority' : '' }, grid: { color: '#2a2a4a' } } } }
       });
 
-      // % Saying "Priority" by Segment
-      const prioDatasets = chartGroups.map((grp, si) => {
+      // Avg Effort Spent by Dimension
+      const effortLabelMap = {1: 'Minimal', 2: '5+ hrs free', 3: '10+ hrs free', 4: '3+ hrs paid', 5: '$50+ spent'};
+      const effortDatasets = chartGroups.map((grp, si) => {
         const grpData = getGroupData(grp);
         return {
           label: grp,
           data: dimensions.map((_, di) => {
-            const count = grpData.filter(p => p.selfAssessment[di] === "It's a priority that I need to solve").length;
-            return Math.round(count / grpData.length * 100);
+            const avg = grpData.reduce((s, p) => s + p.effortSpent[di], 0) / grpData.length;
+            return Math.round(avg * 100) / 100;
           }),
           backgroundColor: PALETTE[si % PALETTE.length] + '99',
           borderColor: PALETTE[si % PALETTE.length],
           borderWidth: 1
         };
       });
-      makeChart('chartSegmentPriority', {
+      makeChart('chartSegmentEffort', {
         type: 'bar',
-        data: { labels: dimLabelsShort, datasets: prioDatasets },
-        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => v + '%' }, grid: { color: '#2a2a4a' } } } }
+        data: { labels: dimLabelsShort, datasets: effortDatasets },
+        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 5, ticks: { color: '#888', stepSize: 1, callback: v => effortLabelMap[v] || '' }, grid: { color: '#2a2a4a' } } } }
       });
 
       // Avg WTP ($) by Segment
