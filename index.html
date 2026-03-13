@@ -23,7 +23,7 @@
     .segment-count strong { color: #6c5ce7; font-size: 18px; }
 
     .dashboard { padding: 24px 32px; display: grid; gap: 24px; }
-    .section-title { font-size: 16px; font-weight: 600; color: #aaa; border-top: 1px solid #2a2a4a; padding-top: 20px; margin-top: 4px; position: sticky; top: 62px; z-index: 40; background: #0f1117; padding-bottom: 8px; }
+    .section-title { font-size: 16px; font-weight: 600; color: #aaa; border-top: 1px solid #2a2a4a; padding-top: 20px; margin-top: 4px; }
 
     .row { display: grid; gap: 24px; }
     .row-2 { grid-template-columns: 1fr 1fr; }
@@ -120,28 +120,8 @@
   </div>
 
   <div class="dashboard">
-    <!-- Section 1: Overall distribution (not affected by segment selection) -->
-    <div class="section-title" style="border-top:none; margin-top:0;">All respondents (static)</div>
-    <div class="row row-2">
-      <div class="card">
-        <h3>Self-Assessment: Where They Struggle</h3>
-        <canvas id="chartSelfAssessment"></canvas>
-      </div>
-      <div class="card">
-        <h3>Effort Spent on Each Dimension</h3>
-        <canvas id="chartEffort"></canvas>
-      </div>
-    </div>
-    <div class="row row-2">
-      <div class="card">
-        <h3>Willingness to Pay: Response Distribution</h3>
-        <canvas id="chartWTP"></canvas>
-      </div>
-      <div class="card" style="visibility:hidden;"></div>
-    </div>
-
-    <!-- Section 2: Segment-responsive charts -->
-    <div class="section-title">Segmented respondents (dynamic)</div>
+    <!-- Segment-responsive charts -->
+    <div class="section-title" style="border-top:none; margin-top:0;">Segmented respondents (dynamic)</div>
 
     <div class="row row-3">
       <div class="card">
@@ -323,50 +303,6 @@
         type: 'bar',
         data: progChartData,
         options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-      });
-
-      // Chart: Self-Assessment (stacked)
-      const saLevels = ["It's a priority that I need to solve", "Could improve, but I have the basics", "Not an issue for me"];
-      const saColors = [COLORS.red + 'cc', COLORS.yellow + 'cc', COLORS.green + 'cc'];
-      const saLabels = ["Priority to solve", "Could improve", "Not an issue"];
-      const saDatasets = saLevels.map((level, li) => ({
-        label: saLabels[li],
-        data: dimensions.map((_, di) => data.filter(p => p.selfAssessment[di] === level).length),
-        backgroundColor: saColors[li]
-      }));
-      makeChart('chartSelfAssessment', {
-        type: 'bar',
-        data: { labels: dimLabelsShort, datasets: saDatasets },
-        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-      });
-
-      // Chart: Effort
-      const effortLabels = ["Minimal", "5+ hrs FREE", "10+ hrs FREE", "3+ hrs PAID", "$50+ spent"];
-      const effortColors = ['#636e72cc', COLORS.blue + 'cc', COLORS.teal + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
-      const effortDatasets = [1,2,3,4,5].map((lvl, li) => ({
-        label: effortLabels[li],
-        data: dimensions.map((_, di) => data.filter(p => p.effortSpent[di] === lvl).length),
-        backgroundColor: effortColors[li]
-      }));
-      makeChart('chartEffort', {
-        type: 'bar',
-        data: { labels: dimLabelsShort, datasets: effortDatasets },
-        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-      });
-
-      // Chart: WTP Distribution
-      const wtpPoints = [0, 10, 25, 50, 100];
-      const wtpLabelsArr = ["$0", "$10", "$25", "$50", "$100+"];
-      const wtpColors = ['#636e72cc', COLORS.blue + 'cc', COLORS.green + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
-      const wtpDatasets = wtpPoints.map((price, pi) => ({
-        label: wtpLabelsArr[pi],
-        data: dimensions.map((_, di) => data.filter(p => p.wtp[di] === price).length),
-        backgroundColor: wtpColors[pi]
-      }));
-      makeChart('chartWTP', {
-        type: 'bar',
-        data: { labels: dimLabelsShort, datasets: wtpDatasets },
-        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
       });
 
       // Chart: WTP Average — segmented when applicable
