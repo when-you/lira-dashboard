@@ -139,21 +139,21 @@
 
     <div class="row row-2">
       <div class="card">
-        <h3>Average Price (Signal-Only) by Segment</h3>
+        <h3>Average Price (Signal-Only)</h3>
         <canvas id="chartWTPAvg"></canvas>
       </div>
       <div class="card">
-        <h3>Need Assessment by Segment</h3>
+        <h3>Need Assessment</h3>
         <canvas id="chartSegmentSelfAssessment"></canvas>
       </div>
     </div>
     <div class="row row-2">
       <div class="card">
-        <h3>Effort Spent by Segment</h3>
+        <h3>Effort Spent</h3>
         <canvas id="chartSegmentEffort"></canvas>
       </div>
       <div class="card">
-        <h3>WTP ($) by Segment</h3>
+        <h3>WTP ($)</h3>
         <canvas id="chartSegmentWTP"></canvas>
       </div>
     </div>
@@ -466,7 +466,6 @@
           options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
         });
       }
-      });
 
       // Table
       renderTable(data);
