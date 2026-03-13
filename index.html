@@ -394,12 +394,19 @@
         options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 5, ticks: { color: '#888', stepSize: 1, callback: v => effortLabelMap[v] || '' }, grid: { color: '#2a2a4a' } } } }
       });
 
-      // WTP ($) by Segment
+      // WTP ($) by Segment — median mapped to survey response values
+      const wtpResponseValues = [0, 10, 25, 50, 100];
+      const wtpResponseLabels = {0: '$0', 10: '$10', 25: '$25', 50: '$50', 100: '$100+'};
+      function medianWTP(values) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[mid] : sorted[mid - 1];
+      }
       const wtpSegDatasets = chartGroups.map((grp, si) => {
         const grpData = getGroupData(grp);
         return {
           label: grp,
-          data: dimensions.map((_, di) => grpData.reduce((s, p) => s + p.wtp[di], 0) / grpData.length),
+          data: dimensions.map((_, di) => medianWTP(grpData.map(p => p.wtp[di]))),
           backgroundColor: PALETTE[si % PALETTE.length] + '99',
           borderColor: PALETTE[si % PALETTE.length],
           borderWidth: 1
@@ -408,7 +415,7 @@
       makeChart('chartSegmentWTP', {
         type: 'bar',
         data: { labels: dimLabelsShort, datasets: wtpSegDatasets },
-        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } } } }
+        options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 100, afterBuildTicks: axis => { axis.ticks = wtpResponseValues.map(v => ({value: v})); }, ticks: { color: '#888', callback: v => wtpResponseLabels[v] || '' }, grid: { color: '#2a2a4a' } } } }
       });
 
       // Table
