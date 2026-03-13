@@ -318,7 +318,7 @@
         makeChart('chartWTPAvg', {
           type: 'bar',
           data: { labels: dimLabelsShort, datasets: wtpAvgSegDatasets },
-          options: { responsive: true, aspectRatio: 3, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
+          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
         });
       } else {
         const wtpAvgConfig = {
@@ -333,7 +333,7 @@
               borderWidth: 1
             }]
           },
-          options: { responsive: true, aspectRatio: 3, plugins: { legend: { display: !!compare, labels: { color: '#ccc' } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
+          options: { responsive: true, plugins: { legend: { display: !!compare, labels: { color: '#ccc' } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
         };
         if (compare) {
           const compAvgWTPs = dimensions.map((_, i) => compare.reduce((s, p) => s + p.wtp[i], 0) / compare.length);
