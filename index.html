@@ -73,6 +73,13 @@
     .chip:hover { background: #6c5ce744; }
     .chip.active { background: #6c5ce7; color: #fff; }
 
+    .filter-other-dropdown { position: fixed; z-index: 100; background: #1a1b26; border: 1px solid #3a3a5a; border-radius: 8px; padding: 8px; min-width: 260px; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .filter-other-dropdown .filter-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6c5ce7; padding: 8px 6px 4px; font-weight: 600; border-top: 1px solid #2a2a4a; margin-top: 4px; }
+    .filter-other-dropdown .filter-section-title:first-child { border-top: none; margin-top: 0; }
+    .filter-other-dropdown label { display: flex; align-items: center; gap: 6px; padding: 4px 6px; font-size: 12px; color: #ccc; cursor: pointer; border-radius: 4px; }
+    .filter-other-dropdown label:hover { background: #2a2a4a; }
+    .filter-other-dropdown input[type="checkbox"] { accent-color: #6c5ce7; }
+
     .tie-count { display: inline-flex; align-items: center; justify-content: center; background: #6c5ce744; color: #6c5ce7; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: 700; margin-left: 6px; cursor: default; position: relative; vertical-align: middle; }
     .tie-count:hover .tie-tooltip { display: block; }
     .tie-tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1a1b26; border: 1px solid #3a3a5a; border-radius: 8px; padding: 8px 12px; white-space: nowrap; font-size: 12px; color: #e0e0e0; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 200; font-weight: 400; }
@@ -113,6 +120,10 @@
       <select id="compareSegment" onchange="render()">
         <option value="">None</option>
       </select>
+    </div>
+    <div class="control-group" style="position:relative;">
+      <label>Filter Other</label>
+      <button id="filterOtherBtn" class="col-filter-btn" style="background:#1e1f2e;border:1px solid #3a3a5a;color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:14px;min-width:200px;cursor:pointer;text-align:left;" onclick="toggleFilterOther(event)">All</button>
     </div>
     <div class="segment-count">
       <strong id="countDisplay">26</strong> participants selected
@@ -193,10 +204,88 @@
       return vals.sort();
     }
 
+    // Filter Other state
+    const filterOtherFields = [
+      { key: 'interviews', label: 'Number of Interviews', values: ["0 roles", "1-2 roles", "3-5 roles", "6-10 roles"] },
+      { key: 'prepTime', label: 'Prep Time Per Round', values: ["0-15 min", "30 min", "1-2 hours", "3-4 hours", "5+ hours"] },
+      { key: 'interviewProgress', label: 'How Far in Interview Process', values: ["Barely getting callbacks", "Too hard to pass the first call", "Struggling in the middle of process", "Making it to final round, but no offer", "Getting offers, but don't like them"] }
+    ];
+    let filterOtherSelections = {};
+    // Initialize all selected
+    filterOtherFields.forEach(f => { filterOtherSelections[f.key] = new Set(f.values); });
+    let filterOtherOpen = false;
+
+    function applyFilterOther(data) {
+      return data.filter(p => {
+        return filterOtherFields.every(f => filterOtherSelections[f.key].has(p[f.key]));
+      });
+    }
+
+    function updateFilterOtherBtn() {
+      const btn = document.getElementById('filterOtherBtn');
+      const totalAll = filterOtherFields.every(f => filterOtherSelections[f.key].size === f.values.length);
+      if (totalAll) {
+        btn.textContent = 'All';
+        btn.style.borderColor = '#3a3a5a';
+        btn.style.color = '#e0e0e0';
+      } else {
+        const active = filterOtherFields.reduce((s, f) => s + (f.values.length - filterOtherSelections[f.key].size), 0);
+        btn.textContent = active + ' excluded';
+        btn.style.borderColor = '#6c5ce7';
+        btn.style.color = '#6c5ce7';
+      }
+    }
+
+    function toggleFilterOther(event) {
+      event.stopPropagation();
+      if (filterOtherOpen) { closeFilterOther(); return; }
+      filterOtherOpen = true;
+      const btn = document.getElementById('filterOtherBtn');
+      const rect = btn.getBoundingClientRect();
+      const dd = document.createElement('div');
+      dd.id = 'filterOtherDropdown';
+      dd.className = 'filter-other-dropdown';
+      dd.style.top = (rect.bottom + 4) + 'px';
+      dd.style.left = rect.left + 'px';
+      dd.addEventListener('click', e => e.stopPropagation());
+
+      let html = '';
+      filterOtherFields.forEach(f => {
+        html += `<div class="filter-section-title">${f.label}</div>`;
+        f.values.forEach(v => {
+          const checked = filterOtherSelections[f.key].has(v) ? 'checked' : '';
+          const escaped = v.replace(/"/g, '&quot;');
+          html += `<label><input type="checkbox" ${checked} onchange="filterOtherToggle('${f.key}', '${escaped}', this.checked)">${v}</label>`;
+        });
+      });
+      dd.innerHTML = html;
+      document.body.appendChild(dd);
+
+      const ddRect = dd.getBoundingClientRect();
+      if (ddRect.right > window.innerWidth) dd.style.left = (window.innerWidth - ddRect.width - 8) + 'px';
+      if (ddRect.bottom > window.innerHeight) dd.style.top = (rect.top - ddRect.height - 4) + 'px';
+    }
+
+    function closeFilterOther() {
+      const dd = document.getElementById('filterOtherDropdown');
+      if (dd) dd.remove();
+      filterOtherOpen = false;
+    }
+
+    function filterOtherToggle(key, val, checked) {
+      if (checked) filterOtherSelections[key].add(val);
+      else filterOtherSelections[key].delete(val);
+      updateFilterOtherBtn();
+      render();
+    }
+
+    // Close filter-other on outside click
+    document.addEventListener('click', () => closeFilterOther());
+
     function getFiltered() {
       const segBy = document.getElementById('segmentBy').value;
       const filterVal = document.getElementById('filterSegment').value;
-      let data = participants;
+      let data = applyFilterOther(participants);
       if (segBy && filterVal) {
         data = data.filter(p => p[segBy] === filterVal);
       }
@@ -207,7 +296,7 @@
       const segBy = document.getElementById('segmentBy').value;
       const compareVal = document.getElementById('compareSegment').value;
       if (!segBy || !compareVal) return null;
-      return participants.filter(p => p[segBy] === compareVal);
+      return applyFilterOther(participants).filter(p => p[segBy] === compareVal);
     }
 
     function destroyChart(id) {
@@ -238,6 +327,7 @@
     });
 
     function render() {
+      const filteredAll = applyFilterOther(participants);
       const data = getFiltered();
       const compare = getCompare();
       const segBy = document.getElementById('segmentBy').value;
@@ -246,7 +336,7 @@
 
       // Determine segments for grouped charts
       const showSegmented = segBy && !document.getElementById('filterSegment').value;
-      const segments = showSegmented ? sortSegments(segBy, [...new Set(participants.map(p => p[segBy]))]) : null;
+      const segments = showSegmented ? sortSegments(segBy, [...new Set(filteredAll.map(p => p[segBy]))]) : null;
 
       // Helper: build grouped bar datasets for a field with categories
       function segmentedStackedChart(field, categories, colors, dataSource) {
@@ -306,7 +396,7 @@
       const avgWTPs = dimensions.map((_, i) => data.reduce((s, p) => s + p.wtp[i], 0) / data.length);
       if (showSegmented) {
         const wtpAvgSegDatasets = segments.map((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
+          const segData = filteredAll.filter(p => p[segBy] === seg);
           return {
             label: seg,
             data: dimensions.map((_, di) => segData.reduce((s, p) => s + p.wtp[di], 0) / segData.length),
@@ -351,7 +441,7 @@
       // Segment comparison charts (always shown — use segments if available, otherwise all participants as one group)
       const saScoreMap = {"It's a priority that I need to solve": 3, "Could improve, but I have the basics": 2, "Not an issue for me": 1};
       const chartGroups = showSegmented ? segments : ['All Participants'];
-      const getGroupData = (grp) => showSegmented ? participants.filter(p => p[segBy] === grp) : data;
+      const getGroupData = (grp) => showSegmented ? filteredAll.filter(p => p[segBy] === grp) : data;
 
       // Need Assessment — stacked bar: count per response level per dimension, segmented when applicable
       const saLevels = ["Not an issue for me", "Could improve, but I have the basics", "It's a priority that I need to solve"];
@@ -360,7 +450,7 @@
       if (showSegmented) {
         const saSegDatasets = [];
         segments.forEach((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
+          const segData = filteredAll.filter(p => p[segBy] === seg);
           saLevels.forEach((level, li) => {
             saSegDatasets.push({
               label: li === 0 ? seg : '',
@@ -398,7 +488,7 @@
       if (showSegmented) {
         const effortSegDatasets = [];
         segments.forEach((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
+          const segData = filteredAll.filter(p => p[segBy] === seg);
           [1,2,3,4,5].forEach((lvl, li) => {
             effortSegDatasets.push({
               label: li === 0 ? seg : '',
@@ -436,7 +526,7 @@
       if (showSegmented) {
         const wtpSegDatasets = [];
         segments.forEach((seg, si) => {
-          const segData = participants.filter(p => p[segBy] === seg);
+          const segData = filteredAll.filter(p => p[segBy] === seg);
           wtpPoints.forEach((price, pi) => {
             wtpSegDatasets.push({
               label: pi === 0 ? seg : '',
