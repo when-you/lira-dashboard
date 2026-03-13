@@ -58,7 +58,7 @@ const participants = [
     name: "Kristin Santana", age: 36, gender: "Woman", ageGroup: "36-44",
     inferredSeniority: "Junior", inferredRole: "Healthcare & Clinical", inferredIndustry: "Healthcare", inferredSalary: "$80k-$100k",
     targetRole: "Registered nurse at moffitt",
-    interviews: "0 roles", prepTime: "0-15 min", interviewProgress: "Getting offers, but don’t like them",
+    interviews: "0 roles", prepTime: "0-15 min", interviewProgress: "Getting offers, but don't like them",
     selfAssessment: ["Not an issue for me","Could improve, but I have the basics","Not an issue for me","Could improve, but I have the basics","Not an issue for me","Not an issue for me","Not an issue for me","Could improve, but I have the basics"],
     effortSpent: [1,1,1,1,1,1,1,1],
     wtp: [10,25,10,10,0,10,25,10]
@@ -76,7 +76,7 @@ const participants = [
     name: "Brittany Tomlin", age: 31, gender: "Woman", ageGroup: "29-32",
     inferredSeniority: "Senior", inferredRole: "Healthcare & Clinical", inferredIndustry: "Healthcare", inferredSalary: "$100k+",
     targetRole: "Clinical Informatics Lead in Healthcare",
-    interviews: "0 roles", prepTime: "5+ hours", interviewProgress: "Getting offers, but don’t like them",
+    interviews: "0 roles", prepTime: "5+ hours", interviewProgress: "Getting offers, but don't like them",
     selfAssessment: ["Could improve, but I have the basics","Not an issue for me","Not an issue for me","Could improve, but I have the basics","Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me"],
     effortSpent: [1,1,1,1,1,1,1,1],
     wtp: [25,0,0,0,0,0,0,0]
@@ -148,7 +148,7 @@ const participants = [
     name: "Lettea Colquhoun", age: 54, gender: "Woman", ageGroup: "45+",
     inferredSeniority: "Senior", inferredRole: "Education & Training", inferredIndustry: "Government & Education", inferredSalary: "$100k+",
     targetRole: "All",
-    interviews: "0 roles", prepTime: "1-2 hours", interviewProgress: "Getting offers, but don’t like them",
+    interviews: "0 roles", prepTime: "1-2 hours", interviewProgress: "Getting offers, but don't like them",
     selfAssessment: ["Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me","Not an issue for me"],
     effortSpent: [2,2,2,2,2,2,2,2],
     wtp: [0,0,0,0,0,0,0,0]
@@ -184,7 +184,7 @@ const participants = [
     name: "Ixca Munoztinoco", age: 33, gender: "Man", ageGroup: "33-35",
     inferredSeniority: "Junior", inferredRole: "Operations & Admin", inferredIndustry: "Technology", inferredSalary: "$80k-$100k",
     targetRole: "Project coordinator in telecommunications",
-    interviews: "1-2 roles", prepTime: "1-2 hours", interviewProgress: "Getting offers, but don’t like them",
+    interviews: "1-2 roles", prepTime: "1-2 hours", interviewProgress: "Getting offers, but don't like them",
     selfAssessment: ["Could improve, but I have the basics","Could improve, but I have the basics","Could improve, but I have the basics","It's a priority that I need to solve","Could improve, but I have the basics","Not an issue for me","Could improve, but I have the basics","It's a priority that I need to solve"],
     effortSpent: [3,3,3,3,1,3,3,3],
     wtp: [10,10,10,10,10,10,10,10]
