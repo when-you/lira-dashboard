@@ -523,7 +523,7 @@
 
       // Effort Spent
       const effortLabelsArr = ["Minimal", "5+ hrs free", "10+ hrs free", "3+ hrs paid", "$50+ spent"];
-      const effortColorsArr = ['#636e72cc', COLORS.blue + 'cc', COLORS.teal + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
+      const effortColorsArr = ['#636e72cc', COLORS.blue + 'cc', COLORS.yellow + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
       segmentedStackedChartWithSubLabels('chartSegmentEffort', effortLabelsArr, effortColorsArr, (p, di) => p.effortSpent[di] - 1);
 
       // WTP ($)
