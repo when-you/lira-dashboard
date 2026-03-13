@@ -382,7 +382,7 @@
       // Chart: Progress
       const progCategories = ["Barely getting callbacks", "Too hard to pass the first call", "Struggling in the middle of process", "Making it to final round, but no offer", "Getting offers, but don't like them"];
       const progLabelsShort = ["Barely getting callbacks", "Can't pass first call", "Struggling mid-process", "Final round, no offer", "Getting offers"];
-      const progColors = [COLORS.grey + 'cc', COLORS.red + 'cc', COLORS.orange + 'cc', COLORS.yellow + 'cc', COLORS.green + 'cc'];
+      const progColors = [COLORS.grey + 'cc', COLORS.yellow + 'cc', COLORS.red + 'cc', COLORS.orange + 'cc', COLORS.green + 'cc'];
       const progChartData = segmentedStackedChart('interviewProgress', progCategories, progColors, data);
       // Use short labels in legend
       progChartData.datasets.forEach((ds, i) => ds.label = progLabelsShort[i]);
