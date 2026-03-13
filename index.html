@@ -149,7 +149,7 @@
     </div>
     <div class="row row-2">
       <div class="card">
-        <h3>Avg Effort Spent by Dimension</h3>
+        <h3>Effort Spent by Segment</h3>
         <canvas id="chartSegmentEffort"></canvas>
       </div>
       <div class="card">
@@ -373,7 +373,7 @@
         options: { responsive: true, plugins: { legend: { position: 'top', display: showSegmented, labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, max: 3, ticks: { color: '#888', stepSize: 1, callback: v => v === 1 ? 'Not an issue' : v === 2 ? 'Could improve' : v === 3 ? 'Priority' : '' }, grid: { color: '#2a2a4a' } } } }
       });
 
-      // Avg Effort Spent by Dimension
+      // Effort Spent by Segment
       const effortLabelMap = {1: 'Minimal', 2: '5+ hrs free', 3: '10+ hrs free', 4: '3+ hrs paid', 5: '$50+ spent'};
       const effortDatasets = chartGroups.map((grp, si) => {
         const grpData = getGroupData(grp);
