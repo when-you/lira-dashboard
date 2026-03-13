@@ -497,7 +497,7 @@
           makeChart(chartId, {
             type: 'bar',
             data: { labels: dimLabelsShort, datasets },
-            options: { responsive: true, layout: { padding: { bottom: 20 } }, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } },
+            options: { responsive: true, layout: { padding: { bottom: 20 } }, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } }, tooltip: { callbacks: { title: (items) => { if (!items.length) return ''; const dsIdx = items[0].datasetIndex; const segIdx = Math.floor(dsIdx / responseLabels.length); return segments[segIdx] || ''; } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } },
             plugins: [segLabelPlugin]
           });
         } else {
