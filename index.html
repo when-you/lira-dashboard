@@ -443,32 +443,62 @@
       const chartGroups = showSegmented ? segments : ['All Participants'];
       const getGroupData = (grp) => showSegmented ? filteredAll.filter(p => p[segBy] === grp) : data;
 
-      // Helper: build segmented stacked chart with sub-labels per segment
-      // Each dimension gets N bars (one per segment), stacked by response values
-      // X-axis labels are [segment, dimension] pairs for Chart.js multi-level labels
+      // Helper: build segmented stacked chart
+      // When segmented: one stacked bar per segment per dimension, response value colors in legend
+      // Segment names shown via separate stacks; legend only shows unique response labels
       function segmentedStackedChartWithSubLabels(chartId, responseLabels, responseColors, getValueFn) {
         if (showSegmented) {
-          // Flatten: for each dimension, one bar per segment
-          const flatLabels = [];
-          dimensions.forEach((_, di) => {
-            segments.forEach(seg => {
-              flatLabels.push([seg, dimLabelsShort[di]]);
+          const datasets = [];
+          segments.forEach((seg, si) => {
+            const segData = filteredAll.filter(p => p[segBy] === seg);
+            responseLabels.forEach((rLabel, ri) => {
+              datasets.push({
+                label: si === 0 ? rLabel : '',
+                data: dimensions.map((_, di) => segData.filter(p => getValueFn(p, di) === ri).length),
+                backgroundColor: responseColors[ri],
+                stack: seg
+              });
             });
           });
-          const datasets = responseLabels.map((rLabel, ri) => ({
-            label: rLabel,
-            data: flatLabels.map(([seg, dim]) => {
-              const di = dimLabelsShort.indexOf(dim);
-              const segData = filteredAll.filter(p => p[segBy] === seg);
-              return segData.filter(p => getValueFn(p, di) === ri).length;
-            }),
-            backgroundColor: responseColors[ri],
-            stack: 'stack'
-          }));
+          // Plugin to draw segment names below bars
+          const segLabelPlugin = {
+            id: chartId + '_segLabels',
+            afterDraw(chart) {
+              const xScale = chart.scales.x;
+              const ctx = chart.ctx;
+              ctx.save();
+              ctx.font = '9px -apple-system, sans-serif';
+              ctx.fillStyle = '#666';
+              ctx.textAlign = 'center';
+              const nSegs = segments.length;
+              const nDims = dimensions.length;
+              for (let di = 0; di < nDims; di++) {
+                // Find the pixel range for this dimension group
+                const metas = [];
+                segments.forEach((seg, si) => {
+                  const dsIdx = si * responseLabels.length; // first dataset of this segment
+                  const meta = chart.getDatasetMeta(dsIdx);
+                  if (meta.data[di]) metas.push(meta.data[di]);
+                });
+                if (metas.length > 1) {
+                  segments.forEach((seg, si) => {
+                    const dsIdx = si * responseLabels.length;
+                    const meta = chart.getDatasetMeta(dsIdx);
+                    if (meta.data[di]) {
+                      const bar = meta.data[di];
+                      ctx.fillText(seg, bar.x, chart.chartArea.bottom + 14);
+                    }
+                  });
+                }
+              }
+              ctx.restore();
+            }
+          };
           makeChart(chartId, {
             type: 'bar',
-            data: { labels: flatLabels, datasets },
-            options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 8 }, autoSkip: false, maxRotation: 45 }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+            data: { labels: dimLabelsShort, datasets },
+            options: { responsive: true, layout: { padding: { bottom: 20 } }, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } },
+            plugins: [segLabelPlugin]
           });
         } else {
           const datasets = responseLabels.map((rLabel, ri) => ({
