@@ -443,119 +443,64 @@
       const chartGroups = showSegmented ? segments : ['All Participants'];
       const getGroupData = (grp) => showSegmented ? filteredAll.filter(p => p[segBy] === grp) : data;
 
-      // Need Assessment — stacked bar: count per response level per dimension, segmented when applicable
+      // Helper: build segmented stacked chart with sub-labels per segment
+      // Each dimension gets N bars (one per segment), stacked by response values
+      // X-axis labels are [segment, dimension] pairs for Chart.js multi-level labels
+      function segmentedStackedChartWithSubLabels(chartId, responseLabels, responseColors, getValueFn) {
+        if (showSegmented) {
+          // Flatten: for each dimension, one bar per segment
+          const flatLabels = [];
+          dimensions.forEach((_, di) => {
+            segments.forEach(seg => {
+              flatLabels.push([seg, dimLabelsShort[di]]);
+            });
+          });
+          const datasets = responseLabels.map((rLabel, ri) => ({
+            label: rLabel,
+            data: flatLabels.map(([seg, dim]) => {
+              const di = dimLabelsShort.indexOf(dim);
+              const segData = filteredAll.filter(p => p[segBy] === seg);
+              return segData.filter(p => getValueFn(p, di) === ri).length;
+            }),
+            backgroundColor: responseColors[ri],
+            stack: 'stack'
+          }));
+          makeChart(chartId, {
+            type: 'bar',
+            data: { labels: flatLabels, datasets },
+            options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 8 }, autoSkip: false, maxRotation: 45 }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+          });
+        } else {
+          const datasets = responseLabels.map((rLabel, ri) => ({
+            label: rLabel,
+            data: dimensions.map((_, di) => data.filter(p => getValueFn(p, di) === ri).length),
+            backgroundColor: responseColors[ri],
+            stack: 'stack'
+          }));
+          makeChart(chartId, {
+            type: 'bar',
+            data: { labels: dimLabelsShort, datasets },
+            options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+          });
+        }
+      }
+
+      // Need Assessment
       const saLevels = ["Not an issue for me", "Could improve, but I have the basics", "It's a priority that I need to solve"];
       const saLabels = ["Not an issue", "Could improve", "Priority to solve"];
       const saColors = [COLORS.green + 'cc', COLORS.yellow + 'cc', COLORS.red + 'cc'];
-      if (showSegmented) {
-        const saSegDatasets = [];
-        segments.forEach((seg, si) => {
-          const segData = filteredAll.filter(p => p[segBy] === seg);
-          saLevels.forEach((level, li) => {
-            saSegDatasets.push({
-              label: li === 0 ? seg : '',
-              data: dimensions.map((_, di) => segData.filter(p => p.selfAssessment[di] === level).length),
-              backgroundColor: saColors[li],
-              stack: seg,
-              categoryPercentage: 0.8,
-              barPercentage: 0.9
-            });
-          });
-        });
-        // Only show segment names in legend (first dataset per stack)
-        makeChart('chartSegmentSelfAssessment', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: saSegDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      } else {
-        const saStackedDatasets = saLevels.map((level, li) => ({
-          label: saLabels[li],
-          data: dimensions.map((_, di) => data.filter(p => p.selfAssessment[di] === level).length),
-          backgroundColor: saColors[li],
-          stack: 'stack'
-        }));
-        makeChart('chartSegmentSelfAssessment', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: saStackedDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      }
+      segmentedStackedChartWithSubLabels('chartSegmentSelfAssessment', saLabels, saColors, (p, di) => saLevels.indexOf(p.selfAssessment[di]));
 
-      // Effort Spent — stacked bar: count per effort level per dimension, segmented when applicable
+      // Effort Spent
       const effortLabelsArr = ["Minimal", "5+ hrs free", "10+ hrs free", "3+ hrs paid", "$50+ spent"];
       const effortColorsArr = ['#636e72cc', COLORS.blue + 'cc', COLORS.teal + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
-      if (showSegmented) {
-        const effortSegDatasets = [];
-        segments.forEach((seg, si) => {
-          const segData = filteredAll.filter(p => p[segBy] === seg);
-          [1,2,3,4,5].forEach((lvl, li) => {
-            effortSegDatasets.push({
-              label: li === 0 ? seg : '',
-              data: dimensions.map((_, di) => segData.filter(p => p.effortSpent[di] === lvl).length),
-              backgroundColor: effortColorsArr[li],
-              stack: seg,
-              categoryPercentage: 0.8,
-              barPercentage: 0.9
-            });
-          });
-        });
-        makeChart('chartSegmentEffort', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: effortSegDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      } else {
-        const effortStackedDatasets = [1,2,3,4,5].map((lvl, li) => ({
-          label: effortLabelsArr[li],
-          data: dimensions.map((_, di) => data.filter(p => p.effortSpent[di] === lvl).length),
-          backgroundColor: effortColorsArr[li],
-          stack: 'stack'
-        }));
-        makeChart('chartSegmentEffort', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: effortStackedDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      }
+      segmentedStackedChartWithSubLabels('chartSegmentEffort', effortLabelsArr, effortColorsArr, (p, di) => p.effortSpent[di] - 1);
 
-      // WTP ($) — stacked bar: count per WTP level per dimension, segmented when applicable
+      // WTP ($)
       const wtpPoints = [0, 10, 25, 50, 100];
       const wtpLabelsArr = ["$0", "$10", "$25", "$50", "$100+"];
       const wtpColorsArr = ['#636e72cc', COLORS.blue + 'cc', COLORS.green + 'cc', COLORS.orange + 'cc', COLORS.red + 'cc'];
-      if (showSegmented) {
-        const wtpSegDatasets = [];
-        segments.forEach((seg, si) => {
-          const segData = filteredAll.filter(p => p[segBy] === seg);
-          wtpPoints.forEach((price, pi) => {
-            wtpSegDatasets.push({
-              label: pi === 0 ? seg : '',
-              data: dimensions.map((_, di) => segData.filter(p => p.wtp[di] === price).length),
-              backgroundColor: wtpColorsArr[pi],
-              stack: seg,
-              categoryPercentage: 0.8,
-              barPercentage: 0.9
-            });
-          });
-        });
-        makeChart('chartSegmentWTP', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: wtpSegDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 }, filter: item => item.text !== '' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      } else {
-        const wtpStackedDatasets = wtpPoints.map((price, pi) => ({
-          label: wtpLabelsArr[pi],
-          data: dimensions.map((_, di) => data.filter(p => p.wtp[di] === price).length),
-          backgroundColor: wtpColorsArr[pi],
-          stack: 'stack'
-        }));
-        makeChart('chartSegmentWTP', {
-          type: 'bar',
-          data: { labels: dimLabelsShort, datasets: wtpStackedDatasets },
-          options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc', font: { size: 10 } } } }, scales: { x: { stacked: true, ticks: { color: '#ccc', font: { size: 9 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
-        });
-      }
+      segmentedStackedChartWithSubLabels('chartSegmentWTP', wtpLabelsArr, wtpColorsArr, (p, di) => wtpPoints.indexOf(p.wtp[di]));
 
       // Table
       renderTable(data);
