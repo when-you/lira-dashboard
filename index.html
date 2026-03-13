@@ -23,6 +23,7 @@
     .segment-count strong { color: #6c5ce7; font-size: 18px; }
 
     .dashboard { padding: 24px 32px; display: grid; gap: 24px; }
+    .section-title { font-size: 16px; font-weight: 600; color: #aaa; border-top: 1px solid #2a2a4a; padding-top: 20px; margin-top: 4px; position: sticky; top: 62px; z-index: 40; background: #0f1117; padding-bottom: 8px; }
 
     .row { display: grid; gap: 24px; }
     .row-2 { grid-template-columns: 1fr 1fr; }
@@ -72,6 +73,10 @@
     .chip:hover { background: #6c5ce744; }
     .chip.active { background: #6c5ce7; color: #fff; }
 
+    .tie-count { display: inline-flex; align-items: center; justify-content: center; background: #6c5ce744; color: #6c5ce7; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: 700; margin-left: 6px; cursor: default; position: relative; vertical-align: middle; }
+    .tie-count:hover .tie-tooltip { display: block; }
+    .tie-tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1a1b26; border: 1px solid #3a3a5a; border-radius: 8px; padding: 8px 12px; white-space: nowrap; font-size: 12px; color: #e0e0e0; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 200; font-weight: 400; }
+
     @media (max-width: 900px) {
       .row-2, .row-3 { grid-template-columns: 1fr; }
       .stat-row { grid-template-columns: repeat(2, 1fr); }
@@ -115,7 +120,28 @@
   </div>
 
   <div class="dashboard">
-    <!-- Row 1: Interview activity (stacked bars) -->
+    <!-- Section 1: Overall distribution (not affected by segment selection) -->
+    <div class="row row-2">
+      <div class="card">
+        <h3>Self-Assessment: Where They Struggle</h3>
+        <canvas id="chartSelfAssessment"></canvas>
+      </div>
+      <div class="card">
+        <h3>Effort Spent on Each Dimension</h3>
+        <canvas id="chartEffort"></canvas>
+      </div>
+    </div>
+    <div class="row row-2">
+      <div class="card">
+        <h3>Willingness to Pay: Response Distribution</h3>
+        <canvas id="chartWTP"></canvas>
+      </div>
+      <div class="card" style="visibility:hidden;"></div>
+    </div>
+
+    <!-- Section 2: Segment-responsive charts -->
+    <div class="section-title">Segment-Responsive — Charts below update when a segment is selected</div>
+
     <div class="row row-3">
       <div class="card">
         <h3>Number of Interviews (Last 3 Months)</h3>
@@ -131,40 +157,17 @@
       </div>
     </div>
 
-    <!-- Row 2: Self-assessment & pain points -->
-    <div class="row row-1">
-      <div class="card">
-        <h3>Self-Assessment: Where They Struggle</h3>
-        <canvas id="chartSelfAssessment"></canvas>
-      </div>
-    </div>
-
-    <!-- Row 3: Effort & WTP -->
     <div class="row row-2">
-      <div class="card">
-        <h3>Effort Spent on Each Dimension</h3>
-        <canvas id="chartEffort"></canvas>
-      </div>
-      <div class="card">
-        <h3>Willingness to Pay: Response Distribution</h3>
-        <canvas id="chartWTP"></canvas>
-      </div>
-    </div>
-
-    <!-- Row 4: WTP Average comparison -->
-    <div class="row row-1">
       <div class="card">
         <h3>Average Willingness to Pay by Dimension</h3>
         <canvas id="chartWTPAvg"></canvas>
       </div>
-    </div>
-
-    <!-- Row 5: Segment comparison (only shown when segmenting) -->
-    <div class="row row-3" id="segmentComparisonRow" style="display:none;">
-      <div class="card">
+      <div class="card" id="segmentSACard" style="display:none;">
         <h3>Self-Assessment by Segment (Avg Score)</h3>
         <canvas id="chartSegmentSelfAssessment"></canvas>
       </div>
+    </div>
+    <div class="row row-2" id="segmentComparisonRow" style="display:none;">
       <div class="card">
         <h3>% Saying "Priority" by Segment</h3>
         <canvas id="chartSegmentPriority"></canvas>
@@ -175,9 +178,10 @@
       </div>
     </div>
 
-    <!-- Participant table -->
+    <!-- Section 3: Participant table -->
+    <div class="section-title">Participant Details — Individual responses and filtering</div>
+
     <div class="card">
-      <h3>Participant Details</h3>
       <div class="table-container" id="tableContainer"></div>
     </div>
   </div>
@@ -332,7 +336,7 @@
       makeChart('chartSelfAssessment', {
         type: 'bar',
         data: { labels: dimLabelsShort, datasets: saDatasets },
-        options: { responsive: true, aspectRatio: 3, plugins: { legend: { position: 'top', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
+        options: { responsive: true, plugins: { legend: { position: 'top', labels: { color: '#ccc' } } }, scales: { x: { stacked: true, ticks: { color: '#ccc' }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: '#888' }, grid: { color: '#2a2a4a' } } } }
       });
 
       // Chart: Effort
@@ -503,15 +507,29 @@
       }));
       const maxScore = Math.max(...scores.map(s => s.score));
       const tops = scores.filter(s => s.score === maxScore);
-      if (maxScore === 3) return tops.map(t => dimShort(t.idx)).join(', ');
-      return dimShort(tops[0].idx);
+      return tops.map(t => dimShort(t.idx)).join(', ');
+    }
+
+    function getTopPainIndividualValues(p) {
+      // Returns individual dimension names for filtering (not combinations)
+      const scores = p.selfAssessment.map((v, i) => ({
+        score: v === "It's a priority that I need to solve" ? 3 : v === "Could improve, but I have the basics" ? 2 : 1,
+        level: v, idx: i
+      }));
+      const maxScore = Math.max(...scores.map(s => s.score));
+      return scores.filter(s => s.score === maxScore).map(t => dimShort(t.idx));
     }
 
     function getTopWTPLabel(p) {
       const maxWTP = Math.max(...p.wtp);
       const tops = p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP);
-      if (maxWTP >= 50) return tops.map(t => dimShort(t.idx)).join(', ');
-      return dimShort(tops[0].idx);
+      return tops.map(t => dimShort(t.idx)).join(', ');
+    }
+
+    function getTopWTPIndividualValues(p) {
+      // Returns individual dimension names for filtering (not combinations)
+      const maxWTP = Math.max(...p.wtp);
+      return p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP).map(t => dimShort(t.idx));
     }
 
     function getTopPains(p) {
@@ -520,17 +538,12 @@
         level: v, idx: i
       }));
       const maxScore = Math.max(...scores.map(s => s.score));
-      // Only show multiple if top level is "priority"
-      if (maxScore === 3) return scores.filter(s => s.score === maxScore);
-      return [scores.filter(s => s.score === maxScore)[0]];
+      return scores.filter(s => s.score === maxScore);
     }
 
     function getTopWTPs(p) {
       const maxWTP = Math.max(...p.wtp);
-      const tops = p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP);
-      // Only show multiple for $50 and $100+
-      if (maxWTP >= 50) return tops;
-      return [tops[0]];
+      return p.wtp.map((v, i) => ({ val: v, idx: i })).filter(w => w.val === maxWTP);
     }
 
     function dimShort(idx) {
@@ -540,7 +553,13 @@
     function getUniqueColValues(data, colIdx) {
       const colKey = colKeys[colIdx];
       const vals = new Set();
-      data.forEach(p => vals.add(getColValue(p, colKey)));
+      if (colKey === 'topPain') {
+        data.forEach(p => getTopPainIndividualValues(p).forEach(v => vals.add(v)));
+      } else if (colKey === 'topWTP') {
+        data.forEach(p => getTopWTPIndividualValues(p).forEach(v => vals.add(v)));
+      } else {
+        data.forEach(p => vals.add(getColValue(p, colKey)));
+      }
       return [...vals].sort();
     }
 
@@ -666,7 +685,13 @@
       // Apply column filters
       Object.entries(columnFilters).forEach(([ci, allowed]) => {
         const colKey = colKeys[ci];
-        filtered = filtered.filter(p => allowed.has(getColValue(p, colKey)));
+        if (colKey === 'topPain') {
+          filtered = filtered.filter(p => getTopPainIndividualValues(p).some(v => allowed.has(v)));
+        } else if (colKey === 'topWTP') {
+          filtered = filtered.filter(p => getTopWTPIndividualValues(p).some(v => allowed.has(v)));
+        } else {
+          filtered = filtered.filter(p => allowed.has(getColValue(p, colKey)));
+        }
       });
 
       // Apply sort
@@ -717,10 +742,18 @@
 
       filtered.forEach(p => {
         const pains = getTopPains(p);
-        const painHtml = pains.map(pain => `${assessBadge(pain.level)} ${dimShort(pain.idx)}`).join('<br>');
+        let painHtml = `${assessBadge(pains[0].level)} ${dimShort(pains[0].idx)}`;
+        if (pains.length > 1) {
+          const allPains = pains.map(pain => `${dimShort(pain.idx)}`).join('<br>');
+          painHtml += `<span class="tie-count">${pains.length}<span class="tie-tooltip">${allPains}</span></span>`;
+        }
 
         const wtps = getTopWTPs(p);
-        const wtpHtml = wtps.map(w => `<strong>$${w.val}</strong> ${dimShort(w.idx)}`).join('<br>');
+        let wtpHtml = `<strong>$${wtps[0].val}</strong> ${dimShort(wtps[0].idx)}`;
+        if (wtps.length > 1) {
+          const allWtps = wtps.map(w => `$${w.val} ${dimShort(w.idx)}`).join('<br>');
+          wtpHtml += `<span class="tie-count">${wtps.length}<span class="tie-tooltip">${allWtps}</span></span>`;
+        }
 
         html += `<tr>
           <td><strong>${p.name}</strong><br><span style="color:#888;font-size:11px">${p.targetRole}</span></td>
