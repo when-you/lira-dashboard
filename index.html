@@ -134,6 +134,14 @@
   </div>
 
   <div class="dashboard">
+    <!-- Overall Average WTP chart -->
+    <div class="row row-1">
+      <div class="card">
+        <h3>Average Willingness to Pay</h3>
+        <canvas id="chartOverallWTP"></canvas>
+      </div>
+    </div>
+
     <!-- Segment-responsive charts -->
 
     <div class="row row-3">
@@ -359,6 +367,57 @@
             backgroundColor: colors[ci]
           }));
           return { labels: ['Participants'], datasets };
+        }
+      }
+
+      // Chart: Overall Average WTP
+      {
+        const avgWTP = (arr) => {
+          if (!arr.length) return 0;
+          const total = arr.reduce((s, p) => s + p.wtp.reduce((a, b) => a + b, 0) / p.wtp.length, 0);
+          return Math.round(total / arr.length * 100) / 100;
+        };
+        if (showSegmented) {
+          const segLabels = segments;
+          const segAvgs = segments.map(seg => avgWTP(filteredAll.filter(p => p[segBy] === seg)));
+          makeChart('chartOverallWTP', {
+            type: 'bar',
+            data: {
+              labels: segLabels,
+              datasets: [{
+                label: 'Avg WTP ($)',
+                data: segAvgs,
+                backgroundColor: segments.map((_, i) => PALETTE[i % PALETTE.length] + '99'),
+                borderColor: segments.map((_, i) => PALETTE[i % PALETTE.length]),
+                borderWidth: 1
+              }]
+            },
+            options: { responsive: true, indexAxis: segments.length > 6 ? 'y' : 'x', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + ctx.parsed[segments.length > 6 ? 'x' : 'y'].toFixed(2) } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: function(v) { return segments.length > 6 ? '$' + v : v; } }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc', callback: function(v) { return segments.length > 6 ? v : '$' + v; } }, grid: { display: false } } } }
+          });
+        } else {
+          const overallAvg = avgWTP(data);
+          const chartConfig = {
+            type: 'bar',
+            data: {
+              labels: [document.getElementById('filterSegment').value || 'All Participants'],
+              datasets: [{
+                label: 'Avg WTP ($)',
+                data: [overallAvg],
+                backgroundColor: COLORS.purple + '99',
+                borderColor: COLORS.purple,
+                borderWidth: 1,
+                barPercentage: 0.4
+              }]
+            },
+            options: { responsive: true, plugins: { legend: { display: !!compare, labels: { color: '#ccc' } }, tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.y.toFixed(2) } } }, scales: { y: { beginAtZero: true, ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#ccc' }, grid: { display: false } } } }
+          };
+          if (compare) {
+            chartConfig.data.labels = [document.getElementById('filterSegment').value || 'Selected', document.getElementById('compareSegment').value];
+            chartConfig.data.datasets[0].data = [overallAvg, avgWTP(compare)];
+            chartConfig.data.datasets[0].backgroundColor = [COLORS.purple + '99', COLORS.orange + '99'];
+            chartConfig.data.datasets[0].borderColor = [COLORS.purple, COLORS.orange];
+          }
+          makeChart('chartOverallWTP', chartConfig);
         }
       }
 
