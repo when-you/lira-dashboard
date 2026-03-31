@@ -93,7 +93,7 @@
 <body>
   <div class="header">
     <h1>Lira Interview Prep Research Dashboard</h1>
-    <p>30 participants — March 11, 2026 cohort — Interactive segmentation explorer</p>
+    <p>135 participants — Willingness to Pay Final Data — Interactive segmentation explorer</p>
   </div>
 
   <div class="controls">
@@ -107,6 +107,9 @@
         <option value="inferredRole">Role Type (Inferred)</option>
         <option value="inferredIndustry">Industry (Inferred)</option>
         <option value="inferredSalary">Salary Band (Inferred)</option>
+        <option value="education">Education Level</option>
+        <option value="neighborhood">Neighborhood Type</option>
+        <option value="race">Race / Ethnicity</option>
       </select>
     </div>
     <div class="control-group">
@@ -195,7 +198,7 @@
     const PALETTE = [COLORS.purple, COLORS.blue, COLORS.green, COLORS.orange, COLORS.red, COLORS.yellow, COLORS.pink, COLORS.teal, COLORS.grey];
 
     // Salary band sort order
-    const salaryOrder = ["$40k-$60k", "$50k-$70k", "$60k-$80k", "$80k-$100k", "$100k+"];
+    const salaryOrder = ["<$50K", "$50K-$75K", "$75K-$120K", "$120K-$180K", "$180K+", "Unclear"];
 
     function sortSegments(segBy, vals) {
       if (segBy === 'inferredSalary') {
@@ -206,8 +209,8 @@
 
     // Filter Other state
     const filterOtherFields = [
-      { key: 'interviews', label: 'Number of Interviews', values: ["0 roles", "1-2 roles", "3-5 roles", "6-10 roles"] },
-      { key: 'prepTime', label: 'Prep Time Per Round', values: ["0-15 min", "30 min", "1-2 hours", "3-4 hours", "5+ hours"] },
+      { key: 'interviews', label: 'Number of Interviews', values: ["0 roles", "1-2 roles", "3-5 roles", "6-10 roles", "11-15 roles", "16+ roles"] },
+      { key: 'prepTime', label: 'Prep Time Per Round', values: ["30 min", "1-2 hours", "3-4 hours", "5+ hours"] },
       { key: 'interviewProgress', label: 'How Far in Interview Process', values: ["Barely getting callbacks", "Too hard to pass the first call", "Struggling in the middle of process", "Making it to final round, but no offer", "Getting offers, but don't like them"] }
     ];
     let filterOtherSelections = {};
@@ -370,8 +373,8 @@
       });
 
       // Chart: Prep Time
-      const prepCategories = ["0-15 min", "30 min", "1-2 hours", "3-4 hours", "5+ hours"];
-      const prepColors = [COLORS.grey + 'cc', COLORS.teal + 'cc', COLORS.blue + 'cc', COLORS.purple + 'cc', COLORS.red + 'cc'];
+      const prepCategories = ["30 min", "1-2 hours", "3-4 hours", "5+ hours"];
+      const prepColors = [COLORS.teal + 'cc', COLORS.blue + 'cc', COLORS.purple + 'cc', COLORS.red + 'cc'];
       const prepChartData = segmentedStackedChart('prepTime', prepCategories, prepColors, data);
       makeChart('chartPrepTime', {
         type: 'bar',
@@ -543,8 +546,8 @@
     let openDropdown = null; // currently open column filter dropdown
     let pendingSelections = null; // temp selections before applying
 
-    const colKeys = ['name','age','gender','inferredSeniority','inferredRole','inferredIndustry','inferredSalary','interviews','prepTime','interviewProgress','topPain','topWTP'];
-    const headers = ['Name','Age','Gender','Seniority','Role Type','Industry','Salary','Interviews','Prep Time','Progress','Top Pain','Top WTP'];
+    const colKeys = ['name','age','gender','inferredSeniority','inferredRole','inferredIndustry','inferredSalary','education','neighborhood','race','interviews','prepTime','interviewProgress','topPain','topWTP'];
+    const headers = ['Name','Age','Gender','Seniority','Role Type','Industry','Salary','Education','Neighborhood','Race/Ethnicity','Interviews','Prep Time','Progress','Top Pain','Top WTP'];
 
     function getColValue(p, colKey) {
       if (colKey === 'name') return p.name;
@@ -730,6 +733,9 @@
           p.inferredRole.toLowerCase().includes(q) ||
           p.inferredIndustry.toLowerCase().includes(q) ||
           p.inferredSalary.toLowerCase().includes(q) ||
+          p.education.toLowerCase().includes(q) ||
+          p.neighborhood.toLowerCase().includes(q) ||
+          p.race.toLowerCase().includes(q) ||
           p.interviews.toLowerCase().includes(q) ||
           p.prepTime.toLowerCase().includes(q) ||
           p.interviewProgress.toLowerCase().includes(q)
@@ -817,6 +823,9 @@
           <td>${p.inferredRole}</td>
           <td>${p.inferredIndustry}</td>
           <td><span class="badge badge-purple">${p.inferredSalary}</span></td>
+          <td>${p.education}</td>
+          <td>${p.neighborhood}</td>
+          <td>${p.race}</td>
           <td>${p.interviews}</td>
           <td>${p.prepTime}</td>
           <td>${p.interviewProgress.split(',')[0]}</td>
